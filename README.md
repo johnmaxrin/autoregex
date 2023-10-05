@@ -1,7 +1,7 @@
-### Auto Regex
+# Auto Regex
 
 
-Build Auto Regex
-'''
+### Build Auto Regex
+```
 make
-'''
+```
