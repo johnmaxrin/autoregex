@@ -8,4 +8,4 @@ build/%.o : src/%.c
 	gcc -c $< -o $@
 
 clean:
-	rm build/*.o
+	rm build/*.o autoregex
