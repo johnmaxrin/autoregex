@@ -23,7 +23,7 @@ void traverseTree(Node *root)
 
 int isAlpha(char a)
 {
-    if ((a >= 'a' && a <= 'z'))
+    if ((a >= 'a' && a <= 'z') || (a >= 'A' && a <= 'Z') || (a >= '0' && a <= '9'))
         return 1;
     else
         return 0;
