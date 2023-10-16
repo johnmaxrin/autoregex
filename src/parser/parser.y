@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../includes/model.h"
+#include "../includes/helpers.h"
 #include"../build/y.tab.h"
 
 
@@ -25,7 +26,7 @@ void yyerror(char *s);
 
 %%
 
-regex :                 augment                 {traverse($1);}     
+regex :                 augment                 {generateDFA($1);}     
                         ;
 
 augment :               expr '#'                {

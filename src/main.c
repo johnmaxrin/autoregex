@@ -23,5 +23,8 @@ int main()
 
     yy_delete_buffer(buffer);
     free(string);
+    
+    
+
     return 0;
 }

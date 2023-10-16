@@ -17,7 +17,6 @@ NodeType* charNode(char data)
     return node;
 }
 
-
 NodeType* wildNode()
 {
     NodeType *node; 
@@ -78,11 +77,11 @@ NodeType* traverse(NodeType *node)
     {
 
     case TYPECHAR:
-        printf("%c",node->charNode.value);
+        printf("%c %d\n",node->charNode.value,node->position);
         break;
 
     case TYPEWILD:
-        printf(".");
+        printf(". %d\n",node->position);
         break;
 
     case TYPECONCAT:
@@ -92,13 +91,13 @@ NodeType* traverse(NodeType *node)
 
     case TYPEOR:
         traverse(node->orNode.left);
-        printf("|");
+        printf("|\n");
         traverse(node->orNode.right);
         break;
     
     case TYPESTAR:
         traverse(node->starNode.prevNode);
-        printf("*");
+        printf("*\n");
         break;
 
 

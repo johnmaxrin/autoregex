@@ -54,6 +54,10 @@ typedef struct concatNodeTypeTag
 typedef struct nodeTypeTag
 {
     nodeTypeEnum type;
+    int position;
+    int isNullable;
+    int *firstPos;
+    int *lastPos;
 
     union 
     {

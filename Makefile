@@ -10,6 +10,7 @@ YACC_C := $(OUTPUT_DIR)/y.tab.c
 YACC_H := $(OUTPUT_DIR)/y.tab.h
 
 CC := gcc
+CFLAGS := -g
 
 EXECUTABLE := autoregex
 
@@ -28,7 +29,7 @@ $(OUTPUT_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OUTPUT_SRC_DIR)/%.o : src/%.c
-	$(CC) -c $< -o $@
+	$(CC) -c -g $< -o $@
 
 $(EXECUTABLE):  $(OUTPUT_DIR)/y.tab.o $(OUTPUT_DIR)/lex.yy.o $(SRC_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@
