@@ -87,6 +87,13 @@ NodeType* traverse(NodeType *node)
     case TYPECONCAT:
         traverse(node->concatNode.left);
         traverse(node->concatNode.right);
+        for(int i=0; i<10; ++i)
+            printf("%d ",node->firstPos[i]);
+        printf("\n LAST POST\n");
+        for(int i=0; i<10; ++i)
+            printf("%d ",node->lastPos[i]);
+        printf("\n");
+        
         break;
 
     case TYPEOR:

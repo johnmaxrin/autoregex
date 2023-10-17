@@ -15,6 +15,7 @@
 \.                {yylval.data = yytext[0]; return WILD;}
 \*                {yylval.data = yytext[0]; return STAR;}
 \#                {return yytext[0];}
+[()]              {return yytext[0];}
 .                 {;}
 %%
 

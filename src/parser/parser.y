@@ -71,6 +71,7 @@ unit :                  atom STAR               {
 
 atom :                  CHAR                    {$$ = charNode($1);}       
                         | WILD                  {$$ = wildNode();}
+                        | '(' expr ')'          {$$ = $2;}
 
 %%
 

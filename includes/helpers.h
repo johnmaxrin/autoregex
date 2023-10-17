@@ -17,7 +17,7 @@ int generateDFA(NodeType *root);
 int markNullable(NodeType *root);
 int* generateFirstPos(NodeType *root);
 int* generateLastPos(NodeType *root);
-void generateFollowPos(NodeType *root);
+void generateFollowPos(NodeType *root, int **);
 
 
 // Thomson DFA Helpers

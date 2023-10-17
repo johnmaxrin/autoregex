@@ -2,12 +2,30 @@
 
 int generateDFA(NodeType *root)
 {
+    int val=15;
     int *pos = (int *)malloc(sizeof(int));
     *pos = 0;
+
+    int **followPos = calloc(val, sizeof(int *));
+
+    for (int j = 0; j < 15; ++j)
+        followPos[j] = calloc(val, sizeof(int));
+    
+
     markPos(root, pos);
     markNullable(root);
     generateFirstPos(root);
-    traverse(root);
+    generateLastPos(root);
+    generateFollowPos(root, followPos);
+
+    for (int i = 0; i < 15; ++i)
+    {
+        for (int j = 0; j < 15; ++j)
+            printf("%d ", followPos[i][j]);
+
+        printf("\n");
+    }
+    // traverse(root);
     return 0;
 }
 
@@ -83,9 +101,8 @@ int *generateFirstPos(NodeType *root)
         allocateArray(root, FIRSTPOSARRAY);
         int *leftset = generateFirstPos(root->orNode.left);
         int *rightset = generateFirstPos(root->orNode.right);
-        mergeSets(leftset,rightset,root->firstPos);
+        mergeSets(leftset, rightset, root->firstPos);
         return root->firstPos;
-        
 
     case TYPECONCAT:
         allocateArray(root, FIRSTPOSARRAY);
@@ -138,16 +155,15 @@ int *generateLastPos(NodeType *root)
         allocateArray(root, LASTPOSARRAY);
         int *leftset = generateLastPos(root->orNode.left);
         int *rightset = generateLastPos(root->orNode.right);
-        mergeSets(leftset,rightset,root->lastPos);
+        mergeSets(leftset, rightset, root->lastPos);
         return root->lastPos;
-        
 
     case TYPECONCAT:
         allocateArray(root, LASTPOSARRAY);
         int *concatleftset = generateLastPos(root->concatNode.left);
         int *concatrightset = generateLastPos(root->concatNode.right);
 
-        if (root->concatNode.left->isNullable)
+        if (root->concatNode.right->isNullable)
         {
             mergeSets(concatleftset, concatrightset, root->lastPos);
             return root->lastPos;
@@ -162,6 +178,80 @@ int *generateLastPos(NodeType *root)
         break;
     }
     return 0;
+}
+
+void generateFollowPos(NodeType *root, int **followPos)
+{
+
+    if (!root)
+        return;
+
+    switch (root->type)
+    {
+    case TYPECONCAT:
+        int *c1LastPos = root->concatNode.left->lastPos;
+        int *c2FirstPos = root->concatNode.right->firstPos;
+
+        int i = 0, j = 0, k = 0;
+
+        while (c1LastPos[i] != 0)
+        {
+            j = 0;
+            k = 0;
+
+            while (followPos[c1LastPos[i]][k++] != 0)
+                ;
+
+            --k;
+
+            while (c2FirstPos[j] != 0)
+            {
+                followPos[c1LastPos[i]][k] = c2FirstPos[j];
+                ++k;
+                ++j;
+            }
+
+            ++i;
+        }
+        generateFollowPos(root->concatNode.left, followPos);
+        generateFollowPos(root->concatNode.right, followPos);
+        break;
+
+    case TYPESTAR:
+
+        int *firsPos = root->firstPos;
+        int *lastPos = root->lastPos;
+
+        int i2 = 0, k2 = 0, j2 = 0;
+
+        while (lastPos[i2] != 0)
+        {
+            k2 = 0;
+            while (followPos[lastPos[i2]][k2++] != 0)
+                ;
+
+            --k2;
+            j2 = 0;
+            while (lastPos[j2] != 0)
+            {
+                followPos[lastPos[i2]][k2] = firsPos[j2];
+                ++k2;
+                ++j2;
+            }
+            ++i2;
+        }
+        generateFollowPos(root->starNode.prevNode, followPos);
+        break;
+
+    case TYPEOR:
+
+        generateFollowPos(root->orNode.left, followPos);
+        generateFollowPos(root->orNode.right, followPos);
+        break;
+
+    default:
+        break;
+    }
 }
 
 int markPos(NodeType *root, int *pos)
@@ -205,12 +295,16 @@ void allocateArray(NodeType *node, int type)
     switch (type)
     {
     case FIRSTPOSARRAY:
-        node->firstPos = (int *)malloc(sizeof(int ) * 10);
+        node->firstPos = (int *)malloc(sizeof(int) * 10);
+        for (int i = 0; i < 10; ++i)
+            node->firstPos[i] = 0;
         break;
 
     case LASTPOSARRAY:
         node->lastPos = (int *)malloc(sizeof(int) * 10);
-        break;;
+        for (int i = 0; i < 10; ++i)
+            node->lastPos[i] = 0;
+        break;
 
     default:
         printf("Not yet implemented\n");
@@ -249,10 +343,6 @@ void mergeSets(int *left, int *right, int *dest)
 }
 
 // @TODO Today
-// Generate FirstPos
-// Generate LastPos
-
-// @TODO Tomorrow
 // Generate Follow Pos
 // Build DFA Table
 // Match Strings
