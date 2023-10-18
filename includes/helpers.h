@@ -11,6 +11,19 @@ typedef enum
     FOLLOWPOSARRAY
 }arrayType;
 
+#define ARRAYLENGTH 20
+#define DSTATEARRAYSIZE 50
+#define FLPOSSIZE 10
+
+typedef struct State
+{
+    int stateID;
+    int isMarked;
+    int *symbolPos;
+
+} State;
+
+
 int generateDFA(NodeType *root);
 
 // Thompson DFA Methods
@@ -18,11 +31,17 @@ int markNullable(NodeType *root);
 int* generateFirstPos(NodeType *root);
 int* generateLastPos(NodeType *root);
 void generateFollowPos(NodeType *root, int **);
-
+void generateDFATable(NodeType *root, int **followPos);
 
 // Thomson DFA Helpers
 int markPos(NodeType *root, int *pos);
 void mergeSets(int *left, int *right, int *dest);
 void allocateArray(NodeType *root,int type);
+void merge(int *mergeArray, int *array1);
+int *makeunion(int nargs, int *tempArray, int **followPos);
+int isDuplicate(int *array, int element);
+int createSymbolListArrays(NodeType *root, int *unqSymArr, int *symArr);
+int *makeNewState(int symbol, int *StatePosArray, int *symbolArray, int **followPos);
+void traverse4SymList(NodeType *root, int *array);
 
 #endif

@@ -2,7 +2,7 @@
 
 int generateDFA(NodeType *root)
 {
-    int val=15;
+    int val = 15;
     int *pos = (int *)malloc(sizeof(int));
     *pos = 0;
 
@@ -10,7 +10,6 @@ int generateDFA(NodeType *root)
 
     for (int j = 0; j < 15; ++j)
         followPos[j] = calloc(val, sizeof(int));
-    
 
     markPos(root, pos);
     markNullable(root);
@@ -18,14 +17,18 @@ int generateDFA(NodeType *root)
     generateLastPos(root);
     generateFollowPos(root, followPos);
 
-    for (int i = 0; i < 15; ++i)
+    generateDFATable(root, followPos);
+
+    /*for (int i = 0; i < 15; ++i)
     {
         for (int j = 0; j < 15; ++j)
             printf("%d ", followPos[i][j]);
 
         printf("\n");
-    }
-    // traverse(root);
+    }*/
+
+    // createSymbolListArray(root);
+    //  traverse(root);
     return 0;
 }
 
@@ -37,8 +40,8 @@ int markNullable(NodeType *root)
     switch (root->type)
     {
     case TYPEWILD:
-        root->isNullable = 0;
-        return 0;
+        root->isNullable = 1;
+        return 1;
         break;
 
     case TYPECHAR:
@@ -54,22 +57,20 @@ int markNullable(NodeType *root)
     case TYPEOR:
         markNullable(root->orNode.left);
         markNullable(root->orNode.right);
-        root->isNullable = root->orNode.left || root->orNode.right;
+        root->isNullable = (root->orNode.left->isNullable) || (root->orNode.right->isNullable);
         return root->isNullable;
         break;
 
     case TYPECONCAT:
         markNullable(root->concatNode.left);
         markNullable(root->concatNode.right);
-        root->isNullable = root->concatNode.left && root->concatNode.right;
+        root->isNullable = (root->concatNode.left->isNullable) && (root->concatNode.right->isNullable);
         return root->isNullable;
         break;
 
     default:
-        return 0;
         break;
     }
-    return 0;
 }
 
 int *generateFirstPos(NodeType *root)
@@ -121,6 +122,7 @@ int *generateFirstPos(NodeType *root)
         }
 
     default:
+        return 0;
         break;
     }
     return 0;
@@ -254,6 +256,58 @@ void generateFollowPos(NodeType *root, int **followPos)
     }
 }
 
+void generateDFATable(NodeType *root, int **followPos)
+{
+
+    int *uniqueSymbolArray, *symbolArray;
+
+    int size = root->concatNode.right->position + 1;
+    symbolArray = calloc(size, sizeof(int));
+    uniqueSymbolArray = calloc(size, sizeof(int));
+
+    int uniqueSymbolSize = createSymbolListArrays(root, uniqueSymbolArray, symbolArray);
+    // int *pos2sym = createPos2SymbolArray(root,symbolList);
+
+    int found = 0;
+
+    State *initialState = (State *)malloc(sizeof(State));
+    initialState->stateID = 0;
+    initialState->isMarked = 0;
+    initialState->symbolPos = root->firstPos;
+
+
+    State *Dstates[DSTATEARRAYSIZE]; // Optimize
+    int DstatesCount = 0;
+    Dstates[DstatesCount++] = initialState;
+
+    while (1)
+    {
+        State *currentState = NULL;
+        for (int i = 0; i < DstatesCount; ++i)
+        {
+            if (!Dstates[i]->isMarked)
+            {
+                currentState = Dstates[i];
+                currentState->isMarked = 1;
+                break;
+            }
+        }
+
+        if (currentState == NULL)
+            break;
+
+        for (int i = 0; i < uniqueSymbolSize; ++i)
+        {
+            // Calculate union of followPos(ipsymbols[i])
+            // which are in currentState
+            int *U = makeNewState(1, currentState->symbolPos, symbolArray, followPos);
+            break;
+        }
+    }
+}
+
+// Helpers
+
 int markPos(NodeType *root, int *pos)
 {
     if (!root)
@@ -295,19 +349,18 @@ void allocateArray(NodeType *node, int type)
     switch (type)
     {
     case FIRSTPOSARRAY:
-        node->firstPos = (int *)malloc(sizeof(int) * 10);
+        node->firstPos = (int *)malloc(sizeof(int) * FLPOSSIZE);
         for (int i = 0; i < 10; ++i)
             node->firstPos[i] = 0;
         break;
 
     case LASTPOSARRAY:
-        node->lastPos = (int *)malloc(sizeof(int) * 10);
+        node->lastPos = (int *)malloc(sizeof(int) * FLPOSSIZE);
         for (int i = 0; i < 10; ++i)
             node->lastPos[i] = 0;
         break;
 
     default:
-        printf("Not yet implemented\n");
         break;
     }
 }
@@ -342,7 +395,128 @@ void mergeSets(int *left, int *right, int *dest)
         }
 }
 
+void merge(int *mergeArray, int *array1) // Global
+{
+
+    int size0 = 0, size1 = 0;
+
+    while (mergeArray[size0++] != 0)
+        ;
+
+    --size0;
+
+    while (array1[size1++] != 0)
+        ;
+    for (int i = 0; i < size1; ++i)
+    {
+        if (!isDuplicate(mergeArray, array1[i]))
+            mergeArray[size0++] = array1[i];
+    }
+}
+
+int *makeunion(int nargs, int *tempArray, int **followPos)
+{
+
+    int *sentArray = (int *)calloc(ARRAYLENGTH, sizeof(int));
+    for (int i = 0; i < nargs; ++i)
+        merge(sentArray, followPos[tempArray[i]]);
+
+    return sentArray;
+}
+
+int isDuplicate(int *array, int element)
+{
+    int size = 0, isDupli = 0;
+    while (array[size++] != 0)
+        ;
+    --size;
+    for (int i = 0; i < size; ++i)
+    {
+        if (array[i] == element)
+        {
+            isDupli = 1;
+            break;
+        }
+    }
+
+    return isDupli;
+}
+
+int createSymbolListArrays(NodeType *root, int *uniqueArray, int *array)
+{
+    int size = root->concatNode.right->position + 1;
+
+    int uniqueArraySize = 0;
+
+    int encountered[size];
+    for (int i = 0; i < size; ++i)
+        encountered[i] = 0;
+    traverse4SymList(root, array);
+
+    for (int i = 0; i < size; i++)
+    {
+        if (!encountered[i])
+        {
+            uniqueArray[uniqueArraySize] = i;
+            uniqueArraySize++;
+
+            encountered[i] = 1;
+
+            for (int j = i + 1; j < size; j++)
+            {
+                if (array[j] == array[i])
+                    encountered[j] = 1;
+            }
+        }
+    }
+
+    return uniqueArraySize - 1;
+}
+
+void traverse4SymList(NodeType *root, int *array)
+{
+    if (!root)
+        return;
+
+    switch (root->type)
+    {
+    case TYPECHAR:
+        array[root->position] = root->charNode.value - '0';
+        break;
+
+    case TYPEWILD:
+        array[root->position] = '.' - '0';
+        break;
+
+    case TYPECONCAT:
+        traverse4SymList(root->concatNode.left, array);
+        traverse4SymList(root->concatNode.right, array);
+        break;
+
+    case TYPEOR:
+        traverse4SymList(root->orNode.left, array);
+        traverse4SymList(root->concatNode.right, array);
+        break;
+
+    case TYPESTAR:
+        traverse4SymList(root->starNode.prevNode, array);
+        break;
+
+    default:
+        break;
+    }
+}
+
+int *makeNewState(int symbol, int *statePosArray, int *symbolArray, int **followPos)
+{
+
+    int StatePosArraySize = 0;
+    for (int i = 0; i < 5; ++i)
+        printf("%d ", statePosArray[i]);
+
+    return NULL;
+}
+
 // @TODO Today
-// Generate Follow Pos
 // Build DFA Table
 // Match Strings
