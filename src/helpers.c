@@ -16,19 +16,8 @@ int generateDFA(NodeType *root)
     generateFirstPos(root);
     generateLastPos(root);
     generateFollowPos(root, followPos);
-
     generateDFATable(root, followPos);
 
-    /*for (int i = 0; i < 15; ++i)
-    {
-        for (int j = 0; j < 15; ++j)
-            printf("%d ", followPos[i][j]);
-
-        printf("\n");
-    }*/
-
-    // createSymbolListArray(root);
-    //  traverse(root);
     return 0;
 }
 
@@ -40,8 +29,8 @@ int markNullable(NodeType *root)
     switch (root->type)
     {
     case TYPEWILD:
-        root->isNullable = 1;
-        return 1;
+        root->isNullable = 0;
+        return 0;
         break;
 
     case TYPECHAR:
@@ -256,7 +245,7 @@ void generateFollowPos(NodeType *root, int **followPos)
     }
 }
 
-void generateDFATable(NodeType *root, int **followPos)
+int **generateDFATable(NodeType *root, int **followPos)
 {
 
     int *uniqueSymbolArray, *symbolArray;
@@ -266,28 +255,34 @@ void generateDFATable(NodeType *root, int **followPos)
     uniqueSymbolArray = calloc(size, sizeof(int));
 
     int uniqueSymbolSize = createSymbolListArrays(root, uniqueSymbolArray, symbolArray);
-    // int *pos2sym = createPos2SymbolArray(root,symbolList);
-
     int found = 0;
+    int *stateIndex = (int *)malloc(sizeof(int));
+    *stateIndex = 0;
+
+    // TRANSITION TABLE INIT
+    int **transitionTable = (int **)malloc(sizeof(int *) * DSTATEARRAYSIZE); // +1 because of 0 index.
+
+    for (int i = 0; i < DSTATEARRAYSIZE; ++i)
+        transitionTable[i] = calloc(uniqueSymbolSize + 1, sizeof(int *));
 
     State *initialState = (State *)malloc(sizeof(State));
     initialState->stateID = 0;
     initialState->isMarked = 0;
     initialState->symbolPos = root->firstPos;
 
-
-    State *Dstates[DSTATEARRAYSIZE]; // Optimize
-    int DstatesCount = 0;
-    Dstates[DstatesCount++] = initialState;
+    State *dStates[DSTATEARRAYSIZE]; // Optimize
+    int dStatesCount = 0;
+    dStates[dStatesCount++] = initialState;
 
     while (1)
     {
+
         State *currentState = NULL;
-        for (int i = 0; i < DstatesCount; ++i)
+        for (int i = 0; i < dStatesCount; ++i)
         {
-            if (!Dstates[i]->isMarked)
+            if (!dStates[i]->isMarked)
             {
-                currentState = Dstates[i];
+                currentState = dStates[i];
                 currentState->isMarked = 1;
                 break;
             }
@@ -296,14 +291,37 @@ void generateDFATable(NodeType *root, int **followPos)
         if (currentState == NULL)
             break;
 
-        for (int i = 0; i < uniqueSymbolSize; ++i)
+        for (int i = 1; i < uniqueSymbolSize; ++i)
         {
-            // Calculate union of followPos(ipsymbols[i])
-            // which are in currentState
-            int *U = makeNewState(1, currentState->symbolPos, symbolArray, followPos);
-            break;
+            int *u = makeNewStatePosArray(symbolArray[uniqueSymbolArray[i]], currentState->symbolPos, symbolArray, followPos);
+            found = uInStates(u, dStates, dStatesCount, stateIndex);
+
+            if (!found)
+            {
+                // Make new state and Add it to the Dstates.
+                State *newState = (State *)malloc(sizeof(State));
+                newState->stateID = currentState->stateID + 1;
+                newState->isMarked = 0;
+                newState->symbolPos = u;
+                transitionTable[currentState->stateID][i] = newState->stateID;
+                dStates[dStatesCount++] = newState;
+            }
+            else
+                transitionTable[currentState->stateID][i] = dStates[*stateIndex]->stateID;
         }
+
+        
     }
+
+    for (int i = 0; i < 10; ++i)
+    {
+        for (int j = 0; j < uniqueSymbolSize + 1; ++j)
+            printf("%d ", transitionTable[i][j]);
+
+        printf("\n");
+    }
+
+    return transitionTable;
 }
 
 // Helpers
@@ -507,16 +525,70 @@ void traverse4SymList(NodeType *root, int *array)
     }
 }
 
-int *makeNewState(int symbol, int *statePosArray, int *symbolArray, int **followPos)
+int *makeNewStatePosArray(int symbol, int *statePosArray, int *symbolArray, int **followPos)
 {
 
-    int StatePosArraySize = 0;
-    for (int i = 0; i < 5; ++i)
-        printf("%d ", statePosArray[i]);
+    int statePosArraySize = 0;
+    for (statePosArraySize; statePosArray[statePosArraySize] != 0; ++statePosArraySize)
+        ;
+    int *newStateArray = calloc(ARRAYLENGTH, sizeof(int));
 
-    return NULL;
+    for (int i = 0; i < statePosArraySize; ++i)
+    {
+        if (symbol == symbolArray[statePosArray[i]])
+            merge(newStateArray, followPos[statePosArray[i]]);
+    }
+
+    return newStateArray;
 }
 
-// @TODO Today
-// Build DFA Table
-// Match Strings
+int uInStates(int *arr1, State **arr2, int dSize, int *index)
+{
+
+    int i = 0, found = 0, arr1Size = 0, arr2Size = 0;
+
+    arr1Size = 0;
+    for (arr1Size; arr1[arr1Size] != 0; ++arr1Size)
+        ;
+
+    for (i; i < dSize; ++i)
+    {
+        arr2Size = 0;
+        for (arr2Size; arr2[i]->symbolPos[arr2Size] != 0; ++arr2Size)
+            ;
+
+        if (!arr1Size && !arr2Size)
+        {
+            *index = i;
+            return 1;
+        }
+
+        if (arr1Size == arr2Size)
+        {
+
+            for (int j = 0; j < arr1Size; ++j)
+            {
+
+                found = 0;
+                for (int k = 0; k < arr2Size; ++k)
+                {
+                    if (arr1[j] == arr2[i]->symbolPos[k])
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    break;
+            }
+            if (found)
+            {
+                *index = i;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
