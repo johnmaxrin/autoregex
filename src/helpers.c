@@ -253,24 +253,68 @@ int **generateDFATable(NodeType *root, int **followPos)
     initState->symbolPos = root->firstPos;
     initState->isMarked = 0;
 
-    // Create symbol array of the pattern. 
+    // Create symbol array of the pattern.
     // Eg. For ab#, Symbol array will be {49,50}
-    int *symbolArray = (int *)malloc(sizeof(int) * ARRAYLENGTH);
+    int *symbolArray = calloc(ARRAYLENGTH, sizeof(int));
+    int *mapSym2Pos = calloc(ARRAYLENGTH, sizeof(int)); // For mapping symbol array and positions.
     int *symbolArraySize = (int *)malloc(sizeof(int));
     *symbolArraySize = -1;
-    generateSymbolArray(root,symbolArray,symbolArraySize);
+    generateSymbolArray(root, symbolArray, mapSym2Pos, symbolArraySize);
 
     // Create unique symbol array of the patter
     // Eg. For aab#, UNQSYM will be {49,50}
-    int *uniqueArray = (int *)malloc(sizeof(int) * ARRAYLENGTH);
+    int *uniqueArray = calloc(ARRAYLENGTH, sizeof(int));
     int *uniqueSize = (int *)malloc(sizeof(int));
     *uniqueSize = 0; // Will increment as suffix
-    generateUnqSymArray(symbolArray,*symbolArraySize,uniqueArray,uniqueSize);
+    generateUnqSymArray(symbolArray, *symbolArraySize, uniqueArray, uniqueSize);
 
-    // Generate State Array
+    // Allocate State Array
     State *stateArray[DSTATEARRAYSIZE];
-    
+    int *stateArraySize = malloc(sizeof(int));
+    *stateArraySize = 0;
+    for (int i = 0; i < DSTATEARRAYSIZE; ++i)
+        stateArray[i] = (State *)malloc(sizeof(State));
+    // Done Allocation
 
+    // Add the first pos of Root as first State.
+    stateArray[(*stateArraySize)++] = initState;
+
+    // Exits when there is not unmarked state.
+    while (1)
+    {
+        State *currentState = NULL;
+
+        for (int i = 0; i < *stateArraySize; ++i)
+        {
+            if (!stateArray[i]->isMarked)
+            {
+                currentState = stateArray[i];
+                currentState->isMarked = 1;
+                break;
+            }
+        }
+
+        if (currentState == NULL)
+            break; // Break from While Loop
+
+        // For each symbol
+        for (int i = 0; i < *uniqueSize; ++i)
+        {
+
+            // Merge the followPos of all positions of in
+            // UniqueArray[i] in the  currentState
+            // and check whether it is present in the current set of
+            // States in stateArray.
+            int *u = calloc(ARRAYLENGTH, sizeof(int));
+            int *uSize = calloc(1, sizeof(int));
+
+            makeUnion(u, uSize, currentState->symbolPos, symbolArray, *symbolArraySize, mapSym2Pos, symbolArray[i], followPos);
+            for(int i=0; i<5; ++i)
+                printf("%d ",u[i]);
+            printf("\nSize:%d \n",*uSize);
+
+        }
+    }
 }
 
 // Helpers
@@ -362,38 +406,40 @@ void mergeSets(int *left, int *right, int *dest)
         }
 }
 
-void  generateSymbolArray(NodeType *root, int *symbolArray, int *index)
+void generateSymbolArray(NodeType *root, int *symbolArray, int *mapSym2Pos, int *index)
 {
-    if(!root)
+    if (!root)
         return;
 
     switch (root->type)
     {
     case TYPECHAR:
         symbolArray[++*index] = root->charNode.value - '0';
+        mapSym2Pos[root->position] = *index;
         return;
-        
+
     case TYPEWILD:
         symbolArray[++*index] = '.' - '0';
+        mapSym2Pos[root->position] = *index;
         return;
-    
+
     case TYPECONCAT:
-        generateSymbolArray(root->concatNode.left,symbolArray,index);
-        generateSymbolArray(root->concatNode.right,symbolArray,index);
+        generateSymbolArray(root->concatNode.left, symbolArray, mapSym2Pos, index);
+        generateSymbolArray(root->concatNode.right, symbolArray, mapSym2Pos, index);
         return;
-    
+
     case TYPESTAR:
-        generateSymbolArray(root->starNode.prevNode,symbolArray,index);
+        generateSymbolArray(root->starNode.prevNode, symbolArray, mapSym2Pos, index);
         return;
-    
+
     case TYPEOR:
-        generateSymbolArray(root->orNode.left,symbolArray,index);
-        generateSymbolArray(root->orNode.right,symbolArray,index);
+        generateSymbolArray(root->orNode.left, symbolArray, mapSym2Pos, index);
+        generateSymbolArray(root->orNode.right, symbolArray, mapSym2Pos, index);
         return;
-    
+
     default:
         break;
-    }   
+    }
 
     return;
 }
@@ -401,19 +447,43 @@ void  generateSymbolArray(NodeType *root, int *symbolArray, int *index)
 void generateUnqSymArray(int *symbolArray, int symbolArraySize, int *uniqueArray, int *uniqueArraySize)
 {
     int found = 0;
-    for(int i=0; i<symbolArraySize; ++i)
+    for (int i = 0; i < symbolArraySize; ++i)
     {
         found = 0;
-        for(int j=0; j<*uniqueArraySize; ++j)
+        for (int j = 0; j < *uniqueArraySize; ++j)
         {
-            if(symbolArray[i] == uniqueArray[j])
+            if (symbolArray[i] == uniqueArray[j])
             {
                 found = 1;
                 break;
             }
         }
 
-        if(!found)
+        if (!found)
             uniqueArray[(*uniqueArraySize)++] = symbolArray[i];
+    }
+}
+
+void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int symbolArraySize, int *map2SymPos, int symbol, int **followPos)
+{
+    for (int i = 0; currentStatePos[i] != 0; ++i)
+    {
+        if (symbol == symbolArray[map2SymPos[currentStatePos[i]]])
+        {
+            for (int j = 0; followPos[currentStatePos[i]][j] != 0; ++j)
+            {
+                int found = 0;
+                for (int k = 0; u[k] != 0; ++k)
+                {
+                    if (u[k] == followPos[currentStatePos[i]][j])
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+                if(!found)
+                    u[(*uSize)++] = followPos[currentStatePos[i]][j];
+            }
+        }
     }
 }

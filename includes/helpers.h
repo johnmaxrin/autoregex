@@ -38,6 +38,8 @@ int ** generateDFATable(NodeType *root, int **followPos);
 int markPos(NodeType *root, int *pos);
 void mergeSets(int *left, int *right, int *dest);
 void allocateArray(NodeType *root,int type);
-void generateSymbolArray(NodeType *root, int *symbolArray, int *index);
+void generateSymbolArray(NodeType *root, int *symbolArray,int *mapSym2Pos, int *index);
 void generateUnqSymArray(int *array, int size, int *uniqueArray, int *unqsize);
+void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int symbolArraySize,int *map2SymPos, int symbol, int **followPos);
+
 #endif
