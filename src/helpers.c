@@ -248,80 +248,29 @@ void generateFollowPos(NodeType *root, int **followPos)
 int **generateDFATable(NodeType *root, int **followPos)
 {
 
-    int *uniqueSymbolArray, *symbolArray;
+    State *initState = (State *)malloc(sizeof(State));
+    initState->stateID = 1;
+    initState->symbolPos = root->firstPos;
+    initState->isMarked = 0;
 
-    int size = root->concatNode.right->position + 1;
-    symbolArray = calloc(size, sizeof(int));
-    uniqueSymbolArray = calloc(size, sizeof(int));
+    // Create symbol array of the pattern. 
+    // Eg. For ab#, Symbol array will be {49,50}
+    int *symbolArray = (int *)malloc(sizeof(int) * ARRAYLENGTH);
+    int *symbolArraySize = (int *)malloc(sizeof(int));
+    *symbolArraySize = -1;
+    generateSymbolArray(root,symbolArray,symbolArraySize);
 
-    int uniqueSymbolSize = createSymbolListArrays(root, uniqueSymbolArray, symbolArray);
-    int found = 0;
-    int *stateIndex = (int *)malloc(sizeof(int));
-    *stateIndex = 0;
+    // Create unique symbol array of the patter
+    // Eg. For aab#, UNQSYM will be {49,50}
+    int *uniqueArray = (int *)malloc(sizeof(int) * ARRAYLENGTH);
+    int *uniqueSize = (int *)malloc(sizeof(int));
+    *uniqueSize = 0; // Will increment as suffix
+    generateUnqSymArray(symbolArray,*symbolArraySize,uniqueArray,uniqueSize);
 
-    // TRANSITION TABLE INIT
-    int **transitionTable = (int **)malloc(sizeof(int *) * DSTATEARRAYSIZE); // +1 because of 0 index.
+    // Generate State Array
+    State *stateArray[DSTATEARRAYSIZE];
+    
 
-    for (int i = 0; i < DSTATEARRAYSIZE; ++i)
-        transitionTable[i] = calloc(uniqueSymbolSize + 1, sizeof(int *));
-
-    State *initialState = (State *)malloc(sizeof(State));
-    initialState->stateID = 0;
-    initialState->isMarked = 0;
-    initialState->symbolPos = root->firstPos;
-
-    State *dStates[DSTATEARRAYSIZE]; // Optimize
-    int dStatesCount = 0;
-    dStates[dStatesCount++] = initialState;
-
-    while (1)
-    {
-
-        State *currentState = NULL;
-        for (int i = 0; i < dStatesCount; ++i)
-        {
-            if (!dStates[i]->isMarked)
-            {
-                currentState = dStates[i];
-                currentState->isMarked = 1;
-                break;
-            }
-        }
-
-        if (currentState == NULL)
-            break;
-
-        for (int i = 1; i < uniqueSymbolSize; ++i)
-        {
-            int *u = makeNewStatePosArray(symbolArray[uniqueSymbolArray[i]], currentState->symbolPos, symbolArray, followPos);
-            found = uInStates(u, dStates, dStatesCount, stateIndex);
-
-            if (!found)
-            {
-                // Make new state and Add it to the Dstates.
-                State *newState = (State *)malloc(sizeof(State));
-                newState->stateID = currentState->stateID + 1;
-                newState->isMarked = 0;
-                newState->symbolPos = u;
-                transitionTable[currentState->stateID][i] = newState->stateID;
-                dStates[dStatesCount++] = newState;
-            }
-            else
-                transitionTable[currentState->stateID][i] = dStates[*stateIndex]->stateID;
-        }
-
-        
-    }
-
-    for (int i = 0; i < 10; ++i)
-    {
-        for (int j = 0; j < uniqueSymbolSize + 1; ++j)
-            printf("%d ", transitionTable[i][j]);
-
-        printf("\n");
-    }
-
-    return transitionTable;
 }
 
 // Helpers
@@ -413,182 +362,58 @@ void mergeSets(int *left, int *right, int *dest)
         }
 }
 
-void merge(int *mergeArray, int *array1) // Global
+void  generateSymbolArray(NodeType *root, int *symbolArray, int *index)
 {
-
-    int size0 = 0, size1 = 0;
-
-    while (mergeArray[size0++] != 0)
-        ;
-
-    --size0;
-
-    while (array1[size1++] != 0)
-        ;
-    for (int i = 0; i < size1; ++i)
-    {
-        if (!isDuplicate(mergeArray, array1[i]))
-            mergeArray[size0++] = array1[i];
-    }
-}
-
-int *makeunion(int nargs, int *tempArray, int **followPos)
-{
-
-    int *sentArray = (int *)calloc(ARRAYLENGTH, sizeof(int));
-    for (int i = 0; i < nargs; ++i)
-        merge(sentArray, followPos[tempArray[i]]);
-
-    return sentArray;
-}
-
-int isDuplicate(int *array, int element)
-{
-    int size = 0, isDupli = 0;
-    while (array[size++] != 0)
-        ;
-    --size;
-    for (int i = 0; i < size; ++i)
-    {
-        if (array[i] == element)
-        {
-            isDupli = 1;
-            break;
-        }
-    }
-
-    return isDupli;
-}
-
-int createSymbolListArrays(NodeType *root, int *uniqueArray, int *array)
-{
-    int size = root->concatNode.right->position + 1;
-
-    int uniqueArraySize = 0;
-
-    int encountered[size];
-    for (int i = 0; i < size; ++i)
-        encountered[i] = 0;
-    traverse4SymList(root, array);
-
-    for (int i = 0; i < size; i++)
-    {
-        if (!encountered[i])
-        {
-            uniqueArray[uniqueArraySize] = i;
-            uniqueArraySize++;
-
-            encountered[i] = 1;
-
-            for (int j = i + 1; j < size; j++)
-            {
-                if (array[j] == array[i])
-                    encountered[j] = 1;
-            }
-        }
-    }
-
-    return uniqueArraySize - 1;
-}
-
-void traverse4SymList(NodeType *root, int *array)
-{
-    if (!root)
+    if(!root)
         return;
 
     switch (root->type)
     {
     case TYPECHAR:
-        array[root->position] = root->charNode.value - '0';
-        break;
-
+        symbolArray[++*index] = root->charNode.value - '0';
+        return;
+        
     case TYPEWILD:
-        array[root->position] = '.' - '0';
-        break;
-
+        symbolArray[++*index] = '.' - '0';
+        return;
+    
     case TYPECONCAT:
-        traverse4SymList(root->concatNode.left, array);
-        traverse4SymList(root->concatNode.right, array);
-        break;
-
-    case TYPEOR:
-        traverse4SymList(root->orNode.left, array);
-        traverse4SymList(root->concatNode.right, array);
-        break;
-
+        generateSymbolArray(root->concatNode.left,symbolArray,index);
+        generateSymbolArray(root->concatNode.right,symbolArray,index);
+        return;
+    
     case TYPESTAR:
-        traverse4SymList(root->starNode.prevNode, array);
-        break;
-
+        generateSymbolArray(root->starNode.prevNode,symbolArray,index);
+        return;
+    
+    case TYPEOR:
+        generateSymbolArray(root->orNode.left,symbolArray,index);
+        generateSymbolArray(root->orNode.right,symbolArray,index);
+        return;
+    
     default:
         break;
-    }
+    }   
+
+    return;
 }
 
-int *makeNewStatePosArray(int symbol, int *statePosArray, int *symbolArray, int **followPos)
+void generateUnqSymArray(int *symbolArray, int symbolArraySize, int *uniqueArray, int *uniqueArraySize)
 {
-
-    int statePosArraySize = 0;
-    for (statePosArraySize; statePosArray[statePosArraySize] != 0; ++statePosArraySize)
-        ;
-    int *newStateArray = calloc(ARRAYLENGTH, sizeof(int));
-
-    for (int i = 0; i < statePosArraySize; ++i)
+    int found = 0;
+    for(int i=0; i<symbolArraySize; ++i)
     {
-        if (symbol == symbolArray[statePosArray[i]])
-            merge(newStateArray, followPos[statePosArray[i]]);
-    }
-
-    return newStateArray;
-}
-
-int uInStates(int *arr1, State **arr2, int dSize, int *index)
-{
-
-    int i = 0, found = 0, arr1Size = 0, arr2Size = 0;
-
-    arr1Size = 0;
-    for (arr1Size; arr1[arr1Size] != 0; ++arr1Size)
-        ;
-
-    for (i; i < dSize; ++i)
-    {
-        arr2Size = 0;
-        for (arr2Size; arr2[i]->symbolPos[arr2Size] != 0; ++arr2Size)
-            ;
-
-        if (!arr1Size && !arr2Size)
+        found = 0;
+        for(int j=0; j<*uniqueArraySize; ++j)
         {
-            *index = i;
-            return 1;
-        }
-
-        if (arr1Size == arr2Size)
-        {
-
-            for (int j = 0; j < arr1Size; ++j)
+            if(symbolArray[i] == uniqueArray[j])
             {
-
-                found = 0;
-                for (int k = 0; k < arr2Size; ++k)
-                {
-                    if (arr1[j] == arr2[i]->symbolPos[k])
-                    {
-                        found = 1;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    break;
-            }
-            if (found)
-            {
-                *index = i;
-                return 1;
+                found = 1;
+                break;
             }
         }
-    }
 
-    return 0;
+        if(!found)
+            uniqueArray[(*uniqueArraySize)++] = symbolArray[i];
+    }
 }
