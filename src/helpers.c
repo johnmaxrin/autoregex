@@ -248,6 +248,10 @@ void generateFollowPos(NodeType *root, int **followPos)
 int **generateDFATable(NodeType *root, int **followPos)
 {
 
+    State *nullState = (State *)malloc(sizeof(State));
+    nullState->isMarked = 1;
+    nullState->symbolPos = calloc(1, sizeof(int));
+
     State *initState = (State *)malloc(sizeof(State));
     initState->stateID = 1;
     initState->symbolPos = root->firstPos;
@@ -276,7 +280,19 @@ int **generateDFATable(NodeType *root, int **followPos)
         stateArray[i] = (State *)malloc(sizeof(State));
     // Done Allocation
 
-    // Add the first pos of Root as first State.
+    // Allocate DFA Table
+    int **dfaTable;
+    dfaTable = calloc(DSTATEARRAYSIZE,sizeof(int *));
+    for(int i=0; i<DSTATEARRAYSIZE; ++i)
+        dfaTable[i] = calloc(*uniqueSize, sizeof(int));
+    
+
+    // Done Allocation
+
+
+
+    // Add the NULL and first pos of Root as first and second State.
+    stateArray[(*stateArraySize)++] = nullState;
     stateArray[(*stateArraySize)++] = initState;
 
     // Exits when there is not unmarked state.
@@ -309,11 +325,37 @@ int **generateDFATable(NodeType *root, int **followPos)
             int *uSize = calloc(1, sizeof(int));
 
             makeUnion(u, uSize, currentState->symbolPos, symbolArray, *symbolArraySize, mapSym2Pos, symbolArray[i], followPos);
-            for(int i=0; i<5; ++i)
-                printf("%d ",u[i]);
-            printf("\nSize:%d \n",*uSize);
+            int found = checkUandStateArrays(u, *uSize, stateArray, *stateArraySize);
+
+            if (!found)
+            {
+               for(int i=0; i<5; ++i)
+                    printf("%d ",u[i]);
+                printf("\n");  
+               // It is a new state. Make it a state and add it to the StateArray.
+               State *newState = (State *)malloc(sizeof(State));
+               newState->stateID = *stateArraySize;
+               newState->symbolPos = u;
+               newState->isMarked = 0;
+               stateArray[(*stateArraySize)++] = newState;
+               dfaTable[currentState->stateID][i] = newState->stateID;
+            }
+            else if(found == NULLSTATE)
+               dfaTable[0][i] = 0;
+            else
+               dfaTable[currentState->stateID][i] = found;
 
         }
+    }
+
+
+    for(int i=0; i<5; ++i)
+    {
+        for(int j=0; j<*uniqueSize; ++j)
+        {
+            printf("%d ",dfaTable[i][j]);
+        }
+        printf("\n");
     }
 }
 
@@ -481,9 +523,70 @@ void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int s
                         break;
                     }
                 }
-                if(!found)
+                if (!found)
                     u[(*uSize)++] = followPos[currentStatePos[i]][j];
             }
         }
     }
+}
+
+int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySize)
+{
+    int found = 0, cmpRes=0;
+
+
+    for (int i = 0; i < stateArraySize; ++i)
+    {
+
+        int *checkArray, checkArraySize = 0;
+        checkArray = stateArray[i]->symbolPos;
+
+        for (checkArraySize; checkArray[checkArraySize] != 0; ++checkArraySize)
+            ;
+
+        printf("U SIZE:%d STA SIZE:%d\n",uSize,checkArraySize);
+
+         
+
+        if (uSize != checkArraySize)
+            continue;
+
+        qsort(u, uSize, sizeof(int), compare);
+        qsort(checkArray, uSize, sizeof(int), compare);
+
+        cmpRes = compareArray(u,checkArray,uSize);
+
+        if(cmpRes == NULLSTATE)
+        {
+            found = NULLSTATE;
+            break;
+        }
+
+        else if(cmpRes)
+        {
+            found = i;
+            break;
+        }
+        
+    }
+
+    return found;
+}
+
+int compare(const void *a, const void *b)
+{
+    return (*(int *)a - *(int *)b);
+}
+
+int compareArray(int *a, int *b, int size)
+{   
+    if(!size)
+        return NULLSTATE;
+
+    for (int i = 0; i < size; ++i)
+    {
+        if (a[i] != b[i])
+            return 0; // Arrays are not equal.
+    }
+    return 1; // Arrays are equal.
 }
