@@ -14,7 +14,8 @@ typedef enum
 #define ARRAYLENGTH 20
 #define DSTATEARRAYSIZE 50
 #define FLPOSSIZE 10
-#define TRANSITIONTABLESIZE 50
+#define TRANSITIONTABLESIZE 20
+#define CHARACTERSUPPORT 76
 #define NULLSTATE 99
 
 typedef struct State
@@ -24,6 +25,12 @@ typedef struct State
     int *symbolPos;
 
 } State;
+
+extern int **dfaTable;
+extern int *finalArray;
+extern int *finalArraySize;
+extern int *uniqueArray;
+extern int *uniqueSize;
 
 int generateDFA(NodeType *root);
 
@@ -44,4 +51,6 @@ void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int s
 int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySize);
 int compare(const void *a, const void *b);
 int compareArray(int *a, int *b, int size);
+int finalState(int finalElm, State **stateArray, int stateArraySize, int *finalArray);
+
 #endif

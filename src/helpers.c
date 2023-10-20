@@ -1,5 +1,6 @@
 #include "../includes/helpers.h"
 
+
 int generateDFA(NodeType *root)
 {
     int val = 15;
@@ -267,8 +268,8 @@ int **generateDFATable(NodeType *root, int **followPos)
 
     // Create unique symbol array of the patter
     // Eg. For aab#, UNQSYM will be {49,50}
-    int *uniqueArray = calloc(ARRAYLENGTH, sizeof(int));
-    int *uniqueSize = (int *)malloc(sizeof(int));
+    uniqueArray = calloc(ARRAYLENGTH, sizeof(int));
+    uniqueSize = (int *)malloc(sizeof(int));
     *uniqueSize = 0; // Will increment as suffix
     generateUnqSymArray(symbolArray, *symbolArraySize, uniqueArray, uniqueSize);
 
@@ -281,12 +282,10 @@ int **generateDFATable(NodeType *root, int **followPos)
     // Done Allocation
 
     // Allocate DFA Table
-    int **dfaTable;
-    dfaTable = calloc(DSTATEARRAYSIZE,sizeof(int *));
-    for(int i=0; i<DSTATEARRAYSIZE; ++i)
-        dfaTable[i] = calloc(*uniqueSize, sizeof(int));
-    
-
+    //int **dfaTable; [20x76]
+    dfaTable = calloc(TRANSITIONTABLESIZE,sizeof(int *));
+    for(int i=0; i<TRANSITIONTABLESIZE; ++i)
+        dfaTable[i] = calloc(CHARACTERSUPPORT, sizeof(int));
     // Done Allocation
 
 
@@ -329,34 +328,28 @@ int **generateDFATable(NodeType *root, int **followPos)
 
             if (!found)
             {
-               for(int i=0; i<5; ++i)
-                    printf("%d ",u[i]);
-                printf("\n");  
                // It is a new state. Make it a state and add it to the StateArray.
                State *newState = (State *)malloc(sizeof(State));
                newState->stateID = *stateArraySize;
                newState->symbolPos = u;
                newState->isMarked = 0;
                stateArray[(*stateArraySize)++] = newState;
-               dfaTable[currentState->stateID][i] = newState->stateID;
+               dfaTable[currentState->stateID][uniqueArray[i]] = newState->stateID;
             }
             else if(found == NULLSTATE)
-               dfaTable[0][i] = 0;
+               dfaTable[0][uniqueArray[i]] = 0;
             else
-               dfaTable[currentState->stateID][i] = found;
+               dfaTable[currentState->stateID][uniqueArray[i]] = found;
 
         }
     }
+    
+    // Make Final States Array
+    finalArray = calloc(ARRAYLENGTH, sizeof(int));
+    finalArraySize = calloc(1,sizeof(int));
+    *finalArraySize = finalState(root->concatNode.right->position,stateArray,*stateArraySize,finalArray);
+    
 
-
-    for(int i=0; i<5; ++i)
-    {
-        for(int j=0; j<*uniqueSize; ++j)
-        {
-            printf("%d ",dfaTable[i][j]);
-        }
-        printf("\n");
-    }
 }
 
 // Helpers
@@ -456,12 +449,12 @@ void generateSymbolArray(NodeType *root, int *symbolArray, int *mapSym2Pos, int 
     switch (root->type)
     {
     case TYPECHAR:
-        symbolArray[++*index] = root->charNode.value - '0';
+        symbolArray[++*index] = root->charNode.value - '.';
         mapSym2Pos[root->position] = *index;
         return;
 
     case TYPEWILD:
-        symbolArray[++*index] = '.' - '0';
+        symbolArray[++*index] = '.' - '.';
         mapSym2Pos[root->position] = *index;
         return;
 
@@ -544,10 +537,6 @@ int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySi
         for (checkArraySize; checkArray[checkArraySize] != 0; ++checkArraySize)
             ;
 
-        printf("U SIZE:%d STA SIZE:%d\n",uSize,checkArraySize);
-
-         
-
         if (uSize != checkArraySize)
             continue;
 
@@ -589,4 +578,22 @@ int compareArray(int *a, int *b, int size)
             return 0; // Arrays are not equal.
     }
     return 1; // Arrays are equal.
+}
+
+int finalState(int finalElm, State **stateArray, int stateArraySize, int *finalArray)
+{
+    int finalStateSize = 0;
+    for(int i=0; i<stateArraySize; ++i)
+    {
+        for(int j=0; stateArray[i]->symbolPos[j]!=0; ++j)
+        {
+            if(finalElm == stateArray[i]->symbolPos[j])
+            {
+                finalArray[finalStateSize++] = stateArray[i]->stateID;
+                break;
+            }
+        }
+    }
+
+    return finalStateSize;
 }
