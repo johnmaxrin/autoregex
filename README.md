@@ -12,7 +12,7 @@ This repository provides a C implementation of the regular expression to the DFA
 ## How to Use
 Clone this repository to your local machine.
 ```bash
-git clone https://github.com/yourusername/regex-to-dfa-conversion.git
+git clone https://github.com/yourusername/autoregex.git
 ```
 Next, Navigate to the project directory.
 ```bash
