@@ -18,11 +18,11 @@ Next, Navigate to the project directory.
 ```bash
 cd autoregex
 ```
-Then build executables
+Then build executable using
 ```bash
 make
 ```
-Finally, For running the executable
+Finally! For running the executable
 ```bash
 ./autoregex
 ```
