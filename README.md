@@ -26,3 +26,17 @@ Finally, For running the executable
 ```bash
 ./autoregex
 ```
+## Suported Operations
+OR (|) 
+```
+Eg: a|b : either a or b can be matched
+```
+STAR (*) 
+```
+Eg: a* : a, aa, aaa, etc can be matched
+```
+
+WILD (.) 
+```
+Eg: a.b : acb, atb, etc can be matched
+```
