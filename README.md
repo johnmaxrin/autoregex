@@ -27,16 +27,12 @@ Finally, For running the executable
 ./autoregex
 ```
 ## Suported Operations
-OR (|) 
-```
+OR ( **|** )<br>
 Eg: a|b : either a or b can be matched
-```
-STAR (*) 
-```
-Eg: a* : a, aa, aaa, etc can be matched
-```
 
-WILD (.) 
-```
+STAR ( **\*** )<br> 
+Eg: a* : a, aa, aaa, etc can be matched
+
+WILD (**.**)<br> 
 Eg: a.b : acb, atb, etc can be matched
-```
+
