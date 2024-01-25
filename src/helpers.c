@@ -1,6 +1,5 @@
 #include "../includes/helpers.h"
 
-
 int generateDFA(NodeType *root)
 {
     int val = 15;
@@ -17,6 +16,9 @@ int generateDFA(NodeType *root)
     generateFirstPos(root);
     generateLastPos(root);
     generateFollowPos(root, followPos);
+
+    
+
     generateDFATable(root, followPos);
 
     return 0;
@@ -266,7 +268,7 @@ int **generateDFATable(NodeType *root, int **followPos)
     *symbolArraySize = -1;
     generateSymbolArray(root, symbolArray, mapSym2Pos, symbolArraySize);
 
-    // Create unique symbol array of the patter
+    // Create unique symbol array of the pattern
     // Eg. For aab#, UNQSYM will be {49,50}
     uniqueArray = calloc(ARRAYLENGTH, sizeof(int));
     uniqueSize = (int *)malloc(sizeof(int));
@@ -282,19 +284,17 @@ int **generateDFATable(NodeType *root, int **followPos)
     // Done Allocation
 
     // Allocate DFA Table
-    //int **dfaTable; [20x76]
-    dfaTable = calloc(TRANSITIONTABLESIZE,sizeof(int *));
-    for(int i=0; i<TRANSITIONTABLESIZE; ++i)
+    // int **dfaTable; [20x76]
+    dfaTable = calloc(TRANSITIONTABLESIZE, sizeof(int *));
+    for (int i = 0; i < TRANSITIONTABLESIZE; ++i)
         dfaTable[i] = calloc(CHARACTERSUPPORT, sizeof(int));
     // Done Allocation
-
-
 
     // Add the NULL and first pos of Root as first and second State.
     stateArray[(*stateArraySize)++] = nullState;
     stateArray[(*stateArraySize)++] = initState;
 
-    // Exits when there is not unmarked state.
+    // Exits when there is no unmarked state.
     while (1)
     {
         State *currentState = NULL;
@@ -322,34 +322,35 @@ int **generateDFATable(NodeType *root, int **followPos)
             // States in stateArray.
             int *u = calloc(ARRAYLENGTH, sizeof(int));
             int *uSize = calloc(1, sizeof(int));
+            
+            
 
-            makeUnion(u, uSize, currentState->symbolPos, symbolArray, *symbolArraySize, mapSym2Pos, symbolArray[i], followPos);
+            makeUnion(u, uSize, currentState->symbolPos, symbolArray, *symbolArraySize, mapSym2Pos, uniqueArray[i], followPos);
             int found = checkUandStateArrays(u, *uSize, stateArray, *stateArraySize);
 
             if (!found)
             {
-               // It is a new state. Make it a state and add it to the StateArray.
-               State *newState = (State *)malloc(sizeof(State));
-               newState->stateID = *stateArraySize;
-               newState->symbolPos = u;
-               newState->isMarked = 0;
-               stateArray[(*stateArraySize)++] = newState;
-               dfaTable[currentState->stateID][uniqueArray[i]] = newState->stateID;
+                // It is a new state. Make it a state and add it to the StateArray.
+                State *newState = (State *)malloc(sizeof(State));
+                newState->stateID = *stateArraySize;
+                newState->symbolPos = u;
+                newState->isMarked = 0;
+                stateArray[(*stateArraySize)++] = newState;
+                dfaTable[currentState->stateID][uniqueArray[i]] = newState->stateID;
             }
-            else if(found == NULLSTATE)
-               dfaTable[0][uniqueArray[i]] = 0;
-            else
-               dfaTable[currentState->stateID][uniqueArray[i]] = found;
 
+            else if (found != NULLSTATE)
+                dfaTable[currentState->stateID][uniqueArray[i]] = found;
+            
+            else
+                dfaTable[0][uniqueArray[i]] = 0;
         }
     }
-    
+
     // Make Final States Array
     finalArray = calloc(ARRAYLENGTH, sizeof(int));
-    finalArraySize = calloc(1,sizeof(int));
-    *finalArraySize = finalState(root->concatNode.right->position,stateArray,*stateArraySize,finalArray);
-    
-
+    finalArraySize = calloc(1, sizeof(int));
+    *finalArraySize = finalState(root->concatNode.right->position, stateArray, *stateArraySize, finalArray);
 }
 
 // Helpers
@@ -481,6 +482,7 @@ void generateSymbolArray(NodeType *root, int *symbolArray, int *mapSym2Pos, int 
 
 void generateUnqSymArray(int *symbolArray, int symbolArraySize, int *uniqueArray, int *uniqueArraySize)
 {
+
     int found = 0;
     for (int i = 0; i < symbolArraySize; ++i)
     {
@@ -501,6 +503,10 @@ void generateUnqSymArray(int *symbolArray, int symbolArraySize, int *uniqueArray
 
 void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int symbolArraySize, int *map2SymPos, int symbol, int **followPos)
 {
+
+    // Debug prints
+    
+
     for (int i = 0; currentStatePos[i] != 0; ++i)
     {
         if (symbol == symbolArray[map2SymPos[currentStatePos[i]]])
@@ -521,11 +527,15 @@ void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int s
             }
         }
     }
+
+   
 }
 
 int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySize)
 {
-    int found = 0, cmpRes=0;
+    int found = 0, cmpRes = 0;
+
+    qsort(u, uSize, sizeof(int), compare);
 
 
     for (int i = 0; i < stateArraySize; ++i)
@@ -540,23 +550,21 @@ int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySi
         if (uSize != checkArraySize)
             continue;
 
-        qsort(u, uSize, sizeof(int), compare);
-        qsort(checkArray, uSize, sizeof(int), compare);
+        qsort(checkArray, checkArraySize, sizeof(int), compare);
 
-        cmpRes = compareArray(u,checkArray,uSize);
+        cmpRes = compareArray(u, checkArray, checkArraySize);
 
-        if(cmpRes == NULLSTATE)
+        if (cmpRes == NULLSTATE)
         {
             found = NULLSTATE;
             break;
         }
 
-        else if(cmpRes)
+        else if (cmpRes)
         {
             found = i;
             break;
         }
-        
     }
 
     return found;
@@ -568,8 +576,8 @@ int compare(const void *a, const void *b)
 }
 
 int compareArray(int *a, int *b, int size)
-{   
-    if(!size)
+{
+    if (!size)
         return NULLSTATE;
 
     for (int i = 0; i < size; ++i)
@@ -582,12 +590,14 @@ int compareArray(int *a, int *b, int size)
 
 int finalState(int finalElm, State **stateArray, int stateArraySize, int *finalArray)
 {
+
     int finalStateSize = 0;
-    for(int i=0; i<stateArraySize; ++i)
+
+    for (int i = 0; i < stateArraySize; ++i)
     {
-        for(int j=0; stateArray[i]->symbolPos[j]!=0; ++j)
+        for (int j = 0; stateArray[i]->symbolPos[j] != 0; ++j)
         {
-            if(finalElm == stateArray[i]->symbolPos[j])
+            if (finalElm == stateArray[i]->symbolPos[j])
             {
                 finalArray[finalStateSize++] = stateArray[i]->stateID;
                 break;

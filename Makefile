@@ -12,7 +12,7 @@ YACC_H := $(OUTPUT_DIR)/y.tab.h
 CC := gcc
 CFLAGS := -g
 
-EXECUTABLE := autoregex
+EXECUTABLE := libregexapi.a
 
 all: $(OUTPUT_DIR) $(EXECUTABLE)
 
@@ -32,7 +32,7 @@ $(OUTPUT_SRC_DIR)/%.o : src/%.c
 	$(CC) -c -g $< -o $@
 
 $(EXECUTABLE):  $(OUTPUT_DIR)/y.tab.o $(OUTPUT_DIR)/lex.yy.o $(SRC_OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
+	ar rcs $@ $^
 
 clean:
 	rm -rf $(OUTPUT_DIR) $(EXECUTABLE)
