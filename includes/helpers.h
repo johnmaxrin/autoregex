@@ -2,6 +2,7 @@
 #define HELPERS_H
 
 #include <stdio.h>
+#include <string.h>
 #include "../includes/model.h"
 
 typedef enum
@@ -32,6 +33,7 @@ extern int *finalArraySize;
 extern int *uniqueArray;
 extern int *uniqueSize;
 
+
 int generateDFA(NodeType *root);
 
 // Thompson DFA Methods
@@ -52,5 +54,10 @@ int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySi
 int compare(const void *a, const void *b);
 int compareArray(int *a, int *b, int size);
 int finalState(int finalElm, State **stateArray, int stateArraySize, int *finalArray);
+
+
+
+//Garbage Collection
+void freeFirstandLast(NodeType *root);
 
 #endif

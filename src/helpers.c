@@ -17,11 +17,58 @@ int generateDFA(NodeType *root)
     generateLastPos(root);
     generateFollowPos(root, followPos);
 
-    
 
     generateDFATable(root, followPos);
 
+
+
+    free(pos);
+    for (int j = 0; j < 15; ++j)
+        free(followPos[j]);
+    free(followPos);
+    freeFirstandLast(root);
+
     return 0;
+}
+
+void freeFirstandLast(NodeType *root)
+{
+    if (!root)
+        return;
+
+    switch (root->type)
+    {
+    case TYPECHAR:
+        free(root->firstPos);
+        free(root->lastPos);
+        free(root);
+        break;
+    case TYPEWILD:
+        free(root->firstPos);
+        free(root->lastPos);
+        free(root);
+        break;
+
+    case TYPEOR:
+        freeFirstandLast(root->orNode.left);
+        freeFirstandLast(root->orNode.right);
+        free(root);
+        break;
+
+    case TYPESTAR:
+        freeFirstandLast(root->starNode.prevNode);
+        free(root);
+        break;
+
+    case TYPECONCAT:
+        freeFirstandLast(root->concatNode.left);
+        freeFirstandLast(root->concatNode.right);
+        free(root);
+        break;
+
+    default:
+        break;
+    }
 }
 
 int markNullable(NodeType *root)
@@ -85,20 +132,20 @@ int *generateFirstPos(NodeType *root)
         break;
 
     case TYPESTAR:
-        allocateArray(root, FIRSTPOSARRAY);
+        // allocateArray(root, FIRSTPOSARRAY);
         int *starSet = generateFirstPos(root->starNode.prevNode);
         root->firstPos = starSet;
         return root->firstPos;
 
     case TYPEOR:
-        allocateArray(root, FIRSTPOSARRAY);
+        // allocateArray(root, FIRSTPOSARRAY);
         int *leftset = generateFirstPos(root->orNode.left);
         int *rightset = generateFirstPos(root->orNode.right);
         mergeSets(leftset, rightset, root->firstPos);
         return root->firstPos;
 
     case TYPECONCAT:
-        allocateArray(root, FIRSTPOSARRAY);
+        // allocateArray(root, FIRSTPOSARRAY);
         int *concatleftset = generateFirstPos(root->concatNode.left);
         int *concatrightset = generateFirstPos(root->concatNode.right);
 
@@ -140,20 +187,20 @@ int *generateLastPos(NodeType *root)
         break;
 
     case TYPESTAR:
-        allocateArray(root, LASTPOSARRAY);
+        // allocateArray(root, LASTPOSARRAY);
         int *starSet = generateLastPos(root->starNode.prevNode);
         root->lastPos = starSet;
         return root->lastPos;
 
     case TYPEOR:
-        allocateArray(root, LASTPOSARRAY);
+        // allocateArray(root, LASTPOSARRAY);
         int *leftset = generateLastPos(root->orNode.left);
         int *rightset = generateLastPos(root->orNode.right);
         mergeSets(leftset, rightset, root->lastPos);
         return root->lastPos;
 
     case TYPECONCAT:
-        allocateArray(root, LASTPOSARRAY);
+        // allocateArray(root, LASTPOSARRAY);
         int *concatleftset = generateLastPos(root->concatNode.left);
         int *concatrightset = generateLastPos(root->concatNode.right);
 
@@ -276,9 +323,11 @@ int **generateDFATable(NodeType *root, int **followPos)
     generateUnqSymArray(symbolArray, *symbolArraySize, uniqueArray, uniqueSize);
 
     // Allocate State Array
-    State *stateArray[DSTATEARRAYSIZE];
+    State **stateArray;
     int *stateArraySize = malloc(sizeof(int));
     *stateArraySize = 0;
+
+    stateArray = (State **)malloc(sizeof(State *) * DSTATEARRAYSIZE);
     for (int i = 0; i < DSTATEARRAYSIZE; ++i)
         stateArray[i] = (State *)malloc(sizeof(State));
     // Done Allocation
@@ -293,6 +342,11 @@ int **generateDFATable(NodeType *root, int **followPos)
     // Add the NULL and first pos of Root as first and second State.
     stateArray[(*stateArraySize)++] = nullState;
     stateArray[(*stateArraySize)++] = initState;
+
+    // The U
+    //int *u = calloc(ARRAYLENGTH, sizeof(int));
+    //int *uSize = calloc(1, sizeof(int));
+    //
 
     // Exits when there is no unmarked state.
     while (1)
@@ -322,8 +376,10 @@ int **generateDFATable(NodeType *root, int **followPos)
             // States in stateArray.
             int *u = calloc(ARRAYLENGTH, sizeof(int));
             int *uSize = calloc(1, sizeof(int));
+
             
-            
+            //int *u = calloc(ARRAYLENGTH, sizeof(int));
+            //int *uSize = calloc(1, sizeof(int));            
 
             makeUnion(u, uSize, currentState->symbolPos, symbolArray, *symbolArraySize, mapSym2Pos, uniqueArray[i], followPos);
             int found = checkUandStateArrays(u, *uSize, stateArray, *stateArraySize);
@@ -341,16 +397,36 @@ int **generateDFATable(NodeType *root, int **followPos)
 
             else if (found != NULLSTATE)
                 dfaTable[currentState->stateID][uniqueArray[i]] = found;
-            
+
             else
                 dfaTable[0][uniqueArray[i]] = 0;
+
         }
     }
+
+    
 
     // Make Final States Array
     finalArray = calloc(ARRAYLENGTH, sizeof(int));
     finalArraySize = calloc(1, sizeof(int));
     *finalArraySize = finalState(root->concatNode.right->position, stateArray, *stateArraySize, finalArray);
+
+    // free(stateArray[0]);
+
+    free(nullState->symbolPos);
+    free(nullState);
+    free(initState);
+    free(symbolArray);
+    free(mapSym2Pos);
+    free(symbolArraySize);
+    //free(u);
+    //free(uSize);
+
+    for (int i = 2; i < DSTATEARRAYSIZE; ++i)
+        free(stateArray[i]);
+
+    free(stateArray);
+    free(stateArraySize);
 }
 
 // Helpers
@@ -505,7 +581,6 @@ void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int s
 {
 
     // Debug prints
-    
 
     for (int i = 0; currentStatePos[i] != 0; ++i)
     {
@@ -527,8 +602,6 @@ void makeUnion(int *u, int *uSize, int *currentStatePos, int *symbolArray, int s
             }
         }
     }
-
-   
 }
 
 int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySize)
@@ -536,7 +609,6 @@ int checkUandStateArrays(int *u, int uSize, State **stateArray, int stateArraySi
     int found = 0, cmpRes = 0;
 
     qsort(u, uSize, sizeof(int), compare);
-
 
     for (int i = 0; i < stateArraySize; ++i)
     {

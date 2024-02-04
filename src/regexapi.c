@@ -25,6 +25,7 @@ int regexapi(char *pattern, char *string)
     int res = 0;
     int flag = 0;
     char *temparr;
+
     temparr = pattern;
     // Augmenting the pattern.
     while (*pattern != '\0')
@@ -51,7 +52,18 @@ int regexapi(char *pattern, char *string)
 
     res = match(pattern, string);
 
+    
+
     yy_delete_buffer(buffer);
+
+    for (int i = 0; i < 20; ++i)
+        free(dfaTable[i]);
+    free(dfaTable);
+
+    free(finalArray);
+    free(finalArraySize);
+    free(uniqueArray);
+    free(uniqueSize);
 
     return res;
 }
@@ -65,7 +77,7 @@ int match(char *pattern, char *string)
         if (uniqueArray[i] == 0)
         {
             isWild = 1;
-            //printf("It's wild!\n");
+            // printf("It's wild!\n");
             break;
         }
     }
@@ -91,7 +103,6 @@ int match(char *pattern, char *string)
 
     // Debug Prints
 
-    
     // -------- Debug print done! -----------  */
 
     // If no wildcard is there! do this
@@ -101,7 +112,7 @@ int match(char *pattern, char *string)
         currentState = dfaTable[currentState][string[s] - '.'];
     }
 
-    //printf("String: %s\nFinal state: %d\n", string, currentState);
+    // printf("String: %s\nFinal state: %d\n", string, currentState);
 
     for (int i = 0; i < *finalArraySize; ++i)
     {
