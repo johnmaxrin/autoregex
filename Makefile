@@ -20,10 +20,10 @@ $(OUTPUT_DIR):
 	mkdir -p $(OUTPUT_DIR) $(OUTPUT_SRC_DIR) 
 
 $(LEX_C): $(LEX_FILE)
-	lex -o $@ $<
+	flex -o $@ $<
 
 $(YACC_C) $(YACC_H): $(YACC_FILE)
-	yacc -d -o  $(YACC_C) $<
+	bison -d -o  $(YACC_C) $<
 
 $(OUTPUT_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

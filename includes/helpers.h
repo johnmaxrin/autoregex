@@ -27,21 +27,21 @@ typedef struct State
 
 } State;
 
-extern int **dfaTable;
 extern int *finalArray;
 extern int *finalArraySize;
 extern int *uniqueArray;
 extern int *uniqueSize;
 
 
-int generateDFA(NodeType *root);
+int generateDFA(NodeType *root, int **dfaTable);
 
 // Thompson DFA Methods
 int markNullable(NodeType *root);
 int *generateFirstPos(NodeType *root);
 int *generateLastPos(NodeType *root);
 void generateFollowPos(NodeType *root, int **);
-int **generateDFATable(NodeType *root, int **followPos);
+int **generateDFATable(NodeType *root, int **followPos, int **dfaTable);
+void printNodes(NodeType *root);
 
 // Thomson DFA Helpers
 int markPos(NodeType *root, int *pos);

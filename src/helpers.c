@@ -1,6 +1,6 @@
 #include "../includes/helpers.h"
 
-int generateDFA(NodeType *root)
+int generateDFA(NodeType *root, int **dfaTable)
 {
     int val = 15;
     int *pos = (int *)malloc(sizeof(int));
@@ -17,8 +17,9 @@ int generateDFA(NodeType *root)
     generateLastPos(root);
     generateFollowPos(root, followPos);
 
+    //printNodes(root);
 
-    generateDFATable(root, followPos);
+    generateDFATable(root, followPos, dfaTable);
 
 
 
@@ -29,6 +30,21 @@ int generateDFA(NodeType *root)
     freeFirstandLast(root);
 
     return 0;
+}
+
+void printNodes(NodeType *root)
+{
+    switch (root->type)
+    {
+    case TYPECHAR:
+        printf("%c",root->charNode.value);
+        break;
+    
+    
+    default:
+        printNodes(root->concatNode.left);
+        printNodes(root->concatNode.right);
+    }
 }
 
 void freeFirstandLast(NodeType *root)
@@ -132,20 +148,20 @@ int *generateFirstPos(NodeType *root)
         break;
 
     case TYPESTAR:
-        // allocateArray(root, FIRSTPOSARRAY);
+        allocateArray(root, FIRSTPOSARRAY);
         int *starSet = generateFirstPos(root->starNode.prevNode);
         root->firstPos = starSet;
         return root->firstPos;
 
     case TYPEOR:
-        // allocateArray(root, FIRSTPOSARRAY);
+        allocateArray(root, FIRSTPOSARRAY);
         int *leftset = generateFirstPos(root->orNode.left);
         int *rightset = generateFirstPos(root->orNode.right);
         mergeSets(leftset, rightset, root->firstPos);
         return root->firstPos;
 
     case TYPECONCAT:
-        // allocateArray(root, FIRSTPOSARRAY);
+        allocateArray(root, FIRSTPOSARRAY);
         int *concatleftset = generateFirstPos(root->concatNode.left);
         int *concatrightset = generateFirstPos(root->concatNode.right);
 
@@ -187,20 +203,20 @@ int *generateLastPos(NodeType *root)
         break;
 
     case TYPESTAR:
-        // allocateArray(root, LASTPOSARRAY);
+        allocateArray(root, LASTPOSARRAY);
         int *starSet = generateLastPos(root->starNode.prevNode);
         root->lastPos = starSet;
         return root->lastPos;
 
     case TYPEOR:
-        // allocateArray(root, LASTPOSARRAY);
+        allocateArray(root, LASTPOSARRAY);
         int *leftset = generateLastPos(root->orNode.left);
         int *rightset = generateLastPos(root->orNode.right);
         mergeSets(leftset, rightset, root->lastPos);
         return root->lastPos;
 
     case TYPECONCAT:
-        // allocateArray(root, LASTPOSARRAY);
+        allocateArray(root, LASTPOSARRAY);
         int *concatleftset = generateLastPos(root->concatNode.left);
         int *concatrightset = generateLastPos(root->concatNode.right);
 
@@ -295,7 +311,7 @@ void generateFollowPos(NodeType *root, int **followPos)
     }
 }
 
-int **generateDFATable(NodeType *root, int **followPos)
+int **generateDFATable(NodeType *root, int **followPos, int **dfaTable)
 {
 
     State *nullState = (State *)malloc(sizeof(State));
@@ -333,10 +349,10 @@ int **generateDFATable(NodeType *root, int **followPos)
     // Done Allocation
 
     // Allocate DFA Table
-    // int **dfaTable; [20x76]
-    dfaTable = calloc(TRANSITIONTABLESIZE, sizeof(int *));
-    for (int i = 0; i < TRANSITIONTABLESIZE; ++i)
-        dfaTable[i] = calloc(CHARACTERSUPPORT, sizeof(int));
+    /*
+        Moved to main(); before yyparse(); 
+    */
+     
     // Done Allocation
 
     // Add the NULL and first pos of Root as first and second State.

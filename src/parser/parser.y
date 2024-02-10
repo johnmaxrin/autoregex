@@ -7,11 +7,15 @@
 #include "../includes/helpers.h"
 #include"../build/y.tab.h"
 
-
-extern int yylex();
-void yyerror(char *s);
-
 %}
+
+%define api.pure full
+%lex-param {void * scanner}
+%parse-param {void * scanner}
+%parse-param {int ** dfaTable}
+
+
+
 
 
 %union{
@@ -26,7 +30,7 @@ void yyerror(char *s);
 
 %%
 
-regex :                 augment                 {generateDFA($1);}     
+regex :                 augment                 {generateDFA($1, dfaTable);}     
                         ;
 
 augment :               expr '#'                {
@@ -78,8 +82,8 @@ atom :                  CHAR                    {$$ = charNode($1);}
 
 
 
-void yyerror(char *s)
+int yyerror()
 {
-    fprintf(stderr,"Parse Error:%s\n",s);
+    fprintf(stderr,"Parse Error\n");
 }
 

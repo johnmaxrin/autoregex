@@ -2,26 +2,30 @@
 #include <string.h>
 #include "../includes/model.h"
 #include "../build/y.tab.h"
-
 #include "../includes/regexapi.h"
+#include "../includes/cache.h"
 
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
 
-YY_BUFFER_STATE buffer;
-extern int yyparse();
-extern YY_BUFFER_STATE yy_scan_string(char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
+// Globals 
+extern int *finalArray;
+extern int *finalArraySize;
+extern int *uniqueArray;
+extern int *uniqueSize;
+// End Globals
 
-int **dfaTable;
-int *finalArray;
-int *finalArraySize;
-int *uniqueArray;
-int *uniqueSize;
+extern Cache *cache;
+
+
 
 int regexapi(char *pattern, char *string)
 {
+    if (!cache)
+    {
+       printf("Please initialize Global Cache\n");
+       exit(0); 
+    }   
+    
     char augmentChar = '#', nullChar = '\0';
-
     int res = 0;
     int flag = 0;
     char *temparr;
@@ -47,34 +51,38 @@ int regexapi(char *pattern, char *string)
         strcat(pattern, &nullChar);
     }
 
-    yy_scan_string(pattern);
-    yyparse();
+  //  x = createEntry(pattern); if pattern is present returns the table index
+  //  else adds it to the table and returns the index.
 
-    res = match(pattern, string);
-
+  //  match(string,x);
+  //   
     
+    int idx = createEntry(pattern);
 
-    yy_delete_buffer(buffer);
 
-    for (int i = 0; i < 20; ++i)
-        free(dfaTable[i]);
-    free(dfaTable);
 
-    free(finalArray);
-    free(finalArraySize);
-    free(uniqueArray);
-    free(uniqueSize);
+    res = match(string,idx);
+    
 
     return res;
 }
 
-int match(char *pattern, char *string)
+int match(char *string, int idx)
 {
 
+    /*
+        for(int i=0; i<20; ++i)
+        {
+            for(int j=0; j<76; ++j)
+                printf("%d ",dfaTable[i][j]);
+            printf("\n");
+        }
+    */
+
     int isWild = 0;
-    for (int i = 0; i < *uniqueSize; ++i)
+    for (int i = 0; i < cache->entries[idx].uniqueSize; ++i)
     {
-        if (uniqueArray[i] == 0)
+        if (cache->entries[idx].uniqueArray[i] == 0)
         {
             isWild = 1;
             // printf("It's wild!\n");
@@ -90,12 +98,12 @@ int match(char *pattern, char *string)
 
         for (int i = 0; i < 20; ++i)
         {
-            if (dfaTable[i][0])
+            if (cache->entries[idx].dfaTable[i][0])
             {
                 for (int j = 1; j < 76; ++j)
                 {
-                    if (!dfaTable[i][j])
-                        dfaTable[i][j] = dfaTable[i][0];
+                    if (!cache->entries[idx].dfaTable[i][j])
+                        cache->entries[idx].dfaTable[i][j] = cache->entries[idx].dfaTable[i][0];
                 }
             }
         }
@@ -109,14 +117,14 @@ int match(char *pattern, char *string)
     int currentState = 1;
     for (int s = 0; string[s] != '\0'; ++s)
     {
-        currentState = dfaTable[currentState][string[s] - '.'];
+        currentState = cache->entries[idx].dfaTable[currentState][string[s] - '.'];
     }
 
     // printf("String: %s\nFinal state: %d\n", string, currentState);
 
-    for (int i = 0; i < *finalArraySize; ++i)
+    for (int i = 0; i < cache->entries[idx].finalArraySize; ++i)
     {
-        if (currentState == finalArray[i])
+        if (currentState == cache->entries[idx].finalArray[i])
             return 1;
     }
 
