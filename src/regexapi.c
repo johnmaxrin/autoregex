@@ -58,11 +58,7 @@ int regexapi(char *pattern, char *string)
   //   
     
     int idx = createEntry(pattern);
-
-
-
     res = match(string,idx);
-    
 
     return res;
 }

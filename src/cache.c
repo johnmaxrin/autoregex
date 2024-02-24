@@ -27,8 +27,6 @@ int createEntry(const char *pattern)
         // Store it in cache
         // Do the matching. Make it critical.
 
-        #pragma omp critical
-        {
             int **dfaTable;
             // int **dfaTable; [20x76]
             dfaTable = calloc(TRANSITIONTABLESIZE, sizeof(int *));
@@ -76,7 +74,6 @@ int createEntry(const char *pattern)
             free(uniqueSize); 
             yy_delete_buffer(buf, scanner);
             yylex_destroy(scanner); */
-        }
         // End of Critical Section
 
         return cache->size - 1;
