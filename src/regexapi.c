@@ -13,11 +13,10 @@ extern int *uniqueArray;
 extern int *uniqueSize;
 // End Globals
 
-extern Cache *cache;
 
 
 
-int regexapi(char *pattern, char *string)
+int regexapi(char *pattern, char *string, Cache *cache)
 {
     if (!cache)
     {
@@ -57,13 +56,13 @@ int regexapi(char *pattern, char *string)
   //  match(string,x);
   //   
     
-    int idx = createEntry(pattern);
-    res = match(string,idx);
+    int idx = createEntry(pattern, cache);
+    res = match(string,idx,cache);
 
     return res;
 }
 
-int match(char *string, int idx)
+int match(char *string, int idx, Cache *cache)
 {
 
     /*

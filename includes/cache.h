@@ -27,13 +27,15 @@ typedef struct CacheEntry
 typedef struct Cache
 {
     int size;
+    int hit;
+    int miss;
     CacheEntry entries[100];
 } Cache;
 
 
 
-int createEntry(const char *pattern); // Returns the entry index.
-int patternFound(const char *pattern);
+int createEntry(const char *pattern, Cache *cache); // Returns the entry index.
+int patternFound(const char *pattern, Cache *cache);
 
 
 #endif

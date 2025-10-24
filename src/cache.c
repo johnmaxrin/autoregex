@@ -11,22 +11,25 @@ int *uniqueArray;
 int *uniqueSize;
 // End Globals
 
-extern Cache *cache; // Global cache
 
-int createEntry(const char *pattern)
+int createEntry(const char *pattern, Cache *cache)
 {
 
     int idx = -1;
 
-    if ((idx = patternFound(pattern)) != -1)
-        return idx;
+    if ((idx = patternFound(pattern, cache)) != -1)
+    {
+	// Increment Hit
+	++(cache->hit);
+	return idx;
+    }
 
     else
     {
         // Create DFA Table
         // Store it in cache
         // Do the matching. Make it critical.
-
+	    ++(cache->miss);
             int **dfaTable;
             // int **dfaTable; [20x76]
             dfaTable = calloc(TRANSITIONTABLESIZE, sizeof(int *));
@@ -80,7 +83,7 @@ int createEntry(const char *pattern)
     }
 }
 
-int patternFound(const char *pattern)
+int patternFound(const char *pattern, Cache *cache)
 {
     int flag = -1;
 
